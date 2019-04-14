@@ -1,5 +1,6 @@
 package training.bignerdranch.photogallery;
 
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.Notification;
@@ -19,9 +20,15 @@ import java.util.concurrent.TimeUnit;
 
 public class PollService extends IntentService {
     private static final String TAG = "PollService";
+    public static final String ACTION_SHOW_NOTIFICATION =
+            "training.bignerdranch.photogallery.SHOW_NOTIFICATION";
+    public static final String PERM_PRIVATE =
+            "training.bignerdranch.photogallery.PRIVATE";
+    public static final String REQUEST_CODE = "REQUEST_CODE";
+    public static final String NOTIFICATION = "NOTIFICATION";
 
     // 60 секунд
-    private static final long POLL_INTERVAL_MS = TimeUnit.MINUTES.toMillis(15);
+    private static final long POLL_INTERVAL_MS = TimeUnit.MINUTES.toMillis(1);
 
     public static Intent newIntent(Context context) {
         return new Intent(context, PollService.class);
@@ -40,6 +47,8 @@ public class PollService extends IntentService {
             alarmManager.cancel(pendingIntent);
             pendingIntent.cancel();
         }
+
+        QueryPreferences.setAlarmOn(context, isOn);
     }
 
     public static boolean isServiceAlarmOn(Context context) {
@@ -90,11 +99,18 @@ public class PollService extends IntentService {
                     .setAutoCancel(true)
                     .build();
 
-            NotificationManagerCompat managerCompat = NotificationManagerCompat.from(this);
-            managerCompat.notify(0, notification);
+            showBackgroundNotification(0, notification);
         }
 
         QueryPreferences.setLastResultId(this, resultId);
+    }
+
+    private void showBackgroundNotification(int requestCode, Notification notification) {
+        Intent intent = new Intent(ACTION_SHOW_NOTIFICATION);
+        intent.putExtra(REQUEST_CODE, requestCode);
+        intent.putExtra(NOTIFICATION, notification);
+        sendOrderedBroadcast(intent, PERM_PRIVATE, null, null,
+                Activity.RESULT_OK, null, null);
     }
 
     private boolean isNetworkAvailableAndConnected() {
